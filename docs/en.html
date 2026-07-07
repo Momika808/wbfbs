@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wildberries FBS API automation: supply assembly, box stickers, labels PDF, QR — wbfbs</title>
+<meta name="description" content="Automate Wildberries FBS supply assembly via the official Marketplace API: bulk order attach, box (trbx) creation, box stickers, order labels as a single PDF, supply QR. Plus fixes for 403 Access denied, deleted supply methods, and chrtId stocks migration.">
+<link rel="alternate" hreflang="ru" href="index.html">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">RU</a> · EN</nav>
+
+<h1>Wildberries FBS automation via the official API</h1>
+
+<p>If you run Wildberries operations for sellers (fulfillment operator,
+agency, or a cross-border seller with a Russian warehouse), you know the
+FBS supply ritual: assemble the supply in the seller cabinet, click boxes
+one by one, download each sticker, print labels and pray the stack matches
+the picking order. Integration modules don't cover it — the API does.</p>
+
+<p><strong>wbfbs</strong> is an open-source CLI
+(<a href="https://github.com/Momika808/wbfbs">github.com/Momika808/wbfbs</a>, MIT)
+that runs the whole cycle:</p>
+
+<ul>
+<li>bulk order-to-supply attach — up to 100 orders per request (the old
+single-order methods were <strong>removed by WB in December 2025</strong>;
+if your integration suddenly broke, that's why);</li>
+<li>order labels as a <strong>single PDF in picking-list order</strong> —
+58×40 / 40×30 mm for thermal printers, or an A4 grid;</li>
+<li>box (trbx) creation and box stickers as ready-to-print PDF;</li>
+<li>supply QR code (note: WB only issues it <em>after</em> the supply is
+transferred to delivery);</li>
+<li>rate-limit aware: 300 req/min shared FBS pool, and a 4XX response
+costs 10× the quota — so only 429/5xx are retried.</li>
+</ul>
+
+<h2>Common WB API pitfalls this tool already handles</h2>
+
+<ul>
+<li><strong>403 Access denied on the whole marketplace-api domain</strong>
+with a perfectly valid «Marketplace» token: a fresh seller cabinet keeps
+the FBS circuit disabled until <em>five return pickup points</em> are
+selected in the cabinet (Supplies → Seller warehouse → FBS). No warehouse
+needed for API access — return points alone unlock it.</li>
+<li><strong>Stocks reject barcodes</strong>: since February 2026,
+<code>PUT /api/v3/stocks/{warehouseId}</code> accepts <code>chrtId</code>
+(size ID from the product card) only — barcode upload is disabled
+(<code>SKUUploadDisabled</code>), and the error is an unhelpful
+<code>400 IncorrectRequest</code>.</li>
+<li><strong>No order-to-box assignment method exists</strong> in the
+current API — boxes can be created, stickered and deleted; assignment
+is not exposed. Don't promise it to your clients.</li>
+</ul>
+
+<p>Self-hosted by design: runs on the seller's own machine with their
+personal API token — which is also a WB rule (personal tokens must not be
+handed to cloud services). Data never leaves your infrastructure.</p>
+
+<div class="cta">
+<p><strong>Need it deployed, or run FBS for multiple cabinets?</strong>
+Setup for your printer and process, first supply run free. Multi-cabinet
+retainer for fulfillment operators. Telegram:
+<a href="https://t.me/wallbon">@wallbon</a> (RU/EN).</p>
+</div>
+
+<footer>Daniil — DevOps/data engineer, marketplace operations automation.
+<a href="https://t.me/wallbon">TG @wallbon</a> ·
+<a href="https://github.com/Momika808/wbfbs">GitHub</a> ·
+<a href="index.html">Русская версия</a></footer>
+</body>
+</html>
