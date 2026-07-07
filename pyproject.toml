@@ -1,0 +1,20 @@
+[project]
+name = "wbfbs"
+version = "0.1.0"
+description = "Сборка FBS-поставок Wildberries: короба, QR, этикетки в PDF"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "click>=8.1",
+    "pillow>=10.0",
+]
+
+[project.scripts]
+wbfbs = "wbfbs.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["wbfbs*"]

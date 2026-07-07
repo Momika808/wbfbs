@@ -1,0 +1,17 @@
+# окружение
+.venv/
+__pycache__/
+*.egg-info/
+
+# бизнес-файлы — не для публичного репо
+leads.md
+outreach.md
+promo/
+leadwatch.py
+leadwatch_state.json
+leadwatch.log
+
+# секреты на всякий случай
+Token*
+*.rtf
+.env
