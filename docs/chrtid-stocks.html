@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wildberries: остатки не загружаются по баркоду — миграция на chrtId и ошибка SKUUploadDisabled</title>
+<meta name="description" content="PUT /api/v3/stocks/{warehouseId} в WB API принимает только chrtId — загрузка остатков по баркоду (sku) отключена с февраля 2026. Ответ 400 IncorrectRequest. Где взять chrtId и как мигрировать.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">← wbfbs: автоматизация FBS-поставок WB</a></nav>
+
+<h1>Остатки WB перестали грузиться по баркоду: теперь только chrtId</h1>
+<p class="muted">Сверено с официальной OpenAPI-спекой, снимок 2026-07-02</p>
+
+<p>Симптом: <code>PUT /api/v3/stocks/{warehouseId}</code> с привычным телом
+по баркоду возвращает безликое:</p>
+
+<pre><code>400 {"code":"IncorrectRequest","message":"Incorrect Request"}</code></pre>
+
+<p>по которому причину не угадать. Причина: с миграции февраля 2026 остатки
+привязываются <strong>только к chrtId</strong> — ID размера товара. Загрузка
+по баркоду (sku) отключена: в спеке метода теперь отдельный пример ошибки
+<code>SKUUploadDisabled</code>.</p>
+
+<h2>Как правильно</h2>
+<pre><code>PUT /api/v3/stocks/{warehouseId}
+{"stocks": [{"chrtId": 336044, "amount": 10}]}
+→ 204</code></pre>
+
+<h2>Где взять chrtId</h2>
+<p>В карточке товара (Content API): <code>POST /content/v2/get/cards/list</code> —
+у каждого размера в <code>sizes</code> есть и <code>chrtID</code>, и баркоды
+<code>skus</code>. Важно не перепутать назначение:</p>
+
+<ul>
+<li><strong>остатки</strong> — по <code>chrtId</code>;</li>
+<li><strong>этикетки, сборочные задания</strong> — там по-прежнему живут
+баркоды (<code>sku</code>);</li>
+<li>это разные сущности в разных методах, и API нигде прямо не говорит,
+какая где нужна.</li>
+</ul>
+
+<p>Это ровно та миграция, из-за которой зимой–весной 2026 в ветках
+интеграционных модулей стояла паника «обмен остатками сломался». Лечится
+за час, когда знаешь; выглядит как необъяснимый отказ, пока не знаешь.</p>
+
+<div class="cta">
+<p>Автоматизирую FBS-операции WB: сборка поставок, короба, стикеры, этикетки
+одним PDF — <a href="index.html">подробнее</a>, код открыт на
+<a href="https://github.com/Momika808/wbfbs">GitHub</a>. Вопросы и внедрение:
+<a href="https://t.me/wallbon">TG @wallbon</a>.</p>
+</div>
+
+<footer><a href="index.html">wbfbs</a> · <a href="https://github.com/Momika808/wbfbs">GitHub</a> · <a href="https://t.me/wallbon">@wallbon</a></footer>
+</body>
+</html>

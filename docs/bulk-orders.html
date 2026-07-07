@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wildberries удалил методы добавления заказов в поставку: миграция на bulk-методы (декабрь 2025)</title>
+<meta name="description" content="PATCH /api/v3/supplies/{id}/orders/{orderId} и GET /api/v3/supplies/{id}/orders удалены из WB API 17–18.12.2025. Замена — bulk-методы /api/marketplace/v3: до 100 заказов одним запросом. Как мигрировать.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">← wbfbs: автоматизация FBS-поставок WB</a></nav>
+
+<h1>Интеграция перестала собирать поставки WB? В декабре удалили методы</h1>
+<p class="muted">Сверено с официальной OpenAPI-спекой, снимок 2026-07-02</p>
+
+<p>17–18 декабря 2025 Wildberries удалил из Marketplace API два метода,
+на которых держались почти все интеграции FBS:</p>
+
+<ul>
+<li><code>PATCH /api/v3/supplies/{supplyId}/orders/{orderId}</code> —
+одиночное добавление заказа в поставку (удалён 18.12.2025);</li>
+<li><code>GET /api/v3/supplies/{supplyId}/orders</code> — заказы поставки
+(удалён 17.12.2025).</li>
+</ul>
+
+<p>Код, написанный по гайдам старше зимы 2025-го, просто перестал работать —
+и сообщение об ошибке не подсказывает, что методы переехали.</p>
+
+<h2>Замена</h2>
+
+<p><strong>Добавление заказов</strong> — теперь bulk, до 100 ID одним запросом:</p>
+<pre><code>PATCH /api/marketplace/v3/supplies/{supplyId}/orders
+{"orders": [111111, 222222, 333333]}
+→ 204</code></pre>
+
+<p>Бонус миграции: заказы при добавлении автоматически переходят из
+<code>new</code> в <code>confirm</code> — отдельный шаг подтверждения больше
+не нужен. Вся дневная партия — одна операция вместо «3–4 запроса на заказ».</p>
+
+<p><strong>Заказы поставки</strong> — теперь только ID:</p>
+<pre><code>GET /api/marketplace/v3/supplies/{supplyId}/order-ids
+→ {"orderIds": [111111, 222222]}</code></pre>
+<p>Полные данные заказов добираются через <code>GET /api/v3/orders</code>.</p>
+
+<h2>Три вещи, которые сломают вам ретраи</h2>
+<ul>
+<li>Лимит на все FBS-методы общий: 300 запросов/мин на аккаунт, интервал
+200 мс. <strong>Ответ 4XX списывается как 10 запросов</strong> — цикл,
+ретраящий ошибки в лоб, выжирает лимит в десять раз быстрее. Ретраить
+можно только 429 и 5xx.</li>
+<li>409 на добавлении — это семантика, не гонка: смешение габаритных типов
+(поставка наследует cargoType первого заказа), заказы с разных складов,
+внутренние + трансграничные вперемешку, закрытая поставка.</li>
+<li>QR поставки (<code>GET .../barcode</code>) отдаётся <strong>только после</strong>
+передачи в доставку (<code>PATCH .../deliver</code>) — напечатать «заранее» нельзя.</li>
+</ul>
+
+<div class="cta">
+<p>Всё это уже учтено в <a href="https://github.com/Momika808/wbfbs">wbfbs</a> —
+открытом инструменте сборки FBS-поставок (короба, стикеры, этикетки одним
+PDF, QR). Нужна миграция вашей интеграции или внедрение под ключ —
+<a href="https://t.me/wallbon">TG @wallbon</a>.</p>
+</div>
+
+<footer><a href="index.html">wbfbs</a> · <a href="https://github.com/Momika808/wbfbs">GitHub</a> · <a href="https://t.me/wallbon">@wallbon</a></footer>
+</body>
+</html>

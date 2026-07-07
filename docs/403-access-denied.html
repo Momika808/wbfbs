@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wildberries API: 403 Access denied на все методы Marketplace при валидном токене — как починить</title>
+<meta name="description" content="Новый кабинет WB отдаёт 403 AccessDenied на весь marketplace-api.wildberries.ru, хотя токен с категорией «Маркетплейс» создан правильно. Причина — не выбраны 5 пунктов возврата. Разбор с проверкой.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">← wbfbs: автоматизация FBS-поставок WB</a></nav>
+
+<h1>403 Access denied на весь Marketplace API Wildberries — причина не в токене</h1>
+<p class="muted">Проверено на живом кабинете, июль 2026</p>
+
+<p>Симптом: свежий кабинет продавца, токен создан, категория «Маркетплейс»
+отмечена, <code>GET /ping</code> отвечает 200 — а <em>любой</em> метод
+<code>marketplace-api.wildberries.ru</code> возвращает:</p>
+
+<pre><code>{"code":"AccessDenied","message":"Access denied"}</code></pre>
+
+<p>Причём 403 отдаёт весь домен целиком — даже безобидный
+<code>GET /api/v3/warehouses</code> (список складов), который от заказов
+никак не зависит. При этом общие методы работают: например,
+<code>common-api.wildberries.ru/api/v1/seller-info</code> спокойно отвечает
+200 тем же токеном.</p>
+
+<h2>Что это НЕ</h2>
+<ul>
+<li>Не скоуп токена — категория «Маркетплейс» на месте, пересоздание не помогает.</li>
+<li>Не тип токена — «Персональный» и «Базовый» ведут себя одинаково.</li>
+<li>Не задержка активации токена.</li>
+<li>Не код и не заголовки — те же запросы работают в песочнице.</li>
+</ul>
+
+<h2>Причина</h2>
+<p>FBS-контур кабинета выключен, пока продавец не выберет <strong>минимум
+5 пунктов выдачи для возвратов</strong>. Пока это не сделано, WB блокирует
+весь marketplace-домен на уровне кабинета — показательно, что собственный
+веб-интерфейс WB в этом состоянии ловит тот же «Access denied» на своих же
+внутренних запросах (красные тосты в разделе настроек FBS).</p>
+
+<h2>Решение (2 минуты)</h2>
+<ol>
+<li>Кабинет WB Партнёры → <strong>Поставки и заказы → Склад продавца → FBS</strong>
+(или «Склады и пропуска» / «Настройки» — любой из них покажет заглушку
+«выберите пункт выдачи»).</li>
+<li>Кнопка выбора ведёт в раздел возвратов → форма «Пункт выдачи возврата».</li>
+<li>Выберите <strong>5 адресов ПВЗ</strong> (логично — ближайшие к вам:
+туда поедут возвраты, если появятся продажи) → Сохранить.</li>
+</ol>
+
+<p>После сохранения 403 снимается сразу, все методы начинают отвечать 200.
+Проверено изоляцией: <strong>создавать склад продавца для доступа к API не
+нужно</strong> — склад понадобится только для реальных заказов; выбора
+пунктов возврата достаточно.</p>
+
+<h2>Как проверить</h2>
+<pre><code>curl -H "Authorization: $WB_TOKEN" \
+  https://marketplace-api.wildberries.ru/api/v3/warehouses
+# до фикса:  403 {"code":"AccessDenied"...}
+# после:     200 []</code></pre>
+
+<div class="cta">
+<p>Чиню интеграции с WB API и автоматизирую FBS-поставки (короба, стикеры,
+этикетки одним PDF, QR) — <a href="index.html">подробнее</a>.
+Вопросы: <a href="https://t.me/wallbon">TG @wallbon</a>.</p>
+</div>
+
+<footer><a href="index.html">wbfbs</a> · <a href="https://github.com/Momika808/wbfbs">GitHub</a> · <a href="https://t.me/wallbon">@wallbon</a></footer>
+</body>
+</html>
